@@ -1,7 +1,7 @@
 
 import type { User } from './types';
 import { db, auth } from './firebase/clientApp';
-import { collection, getDocs, doc, getDoc } from 'firebase/firestore';
+import { collection, getDocs, doc, getDoc, setDoc } from 'firebase/firestore';
 import { onAuthStateChanged, type User as AuthUser } from 'firebase/auth';
 
 // Helper to get the current authenticated user
