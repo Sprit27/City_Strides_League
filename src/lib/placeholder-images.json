@@ -1,3 +1,46 @@
 {
-  "placeholderImages": []
+  "placeholderImages": [
+    {
+      "id": "avatar1",
+      "description": "User avatar 1",
+      "imageUrl": "https://images.unsplash.com/photo-1486218119243-13883505764c?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3NDE5ODJ8MHwxfHNlYXJjaHw3fHxwZXJzb24lMjBydW5uaW5nfGVufDB8fHx8MTc3MTc2MTk2Mnww&ixlib=rb-4.1.0&q=80&w=1080",
+      "imageHint": "person running"
+    },
+    {
+      "id": "avatar2",
+      "description": "User avatar 2",
+      "imageUrl": "https://images.unsplash.com/photo-1709603600930-cb03b33eff5d?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3NDE5ODJ8MHwxfHNlYXJjaHw4fHxwZXJzb24lMjBoaWtpbmd8ZW58MHx8fHwxNzcxNzg0NjExfDA&ixlib=rb-4.1.0&q=80&w=1080",
+      "imageHint": "person hiking"
+    },
+    {
+      "id": "avatar3",
+      "description": "User avatar 3",
+      "imageUrl": "https://images.unsplash.com/photo-1526676317768-d9b14f15615a?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3NDE5ODJ8MHwxfHNlYXJjaHw2fHxhdGhsZXRlfGVufDB8fHx8MTc3MTgzMjE2OHww&ixlib=rb-4.1.0&q=80&w=1080",
+      "imageHint": "athlete"
+    },
+    {
+      "id": "avatar4",
+      "description": "User avatar 4",
+      "imageUrl": "https://images.unsplash.com/photo-1456613820599-bfe244172af5?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3NDE5ODJ8MHwxfHNlYXJjaHwxfHx0cmFpbCUyMHJ1bm5pbmd8ZW58MHx8fHwxNzcxODMyMTY4fDA&ixlib=rb-4.1.0&q=80&w=1080",
+      "imageHint": "trail running"
+    },
+    {
+      "id": "avatar5",
+      "description": "User avatar 5",
+      "imageUrl": "https://images.unsplash.com/photo-1622206509367-cb16e7f50e69?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3NDE5ODJ8MHwxfHNlYXJjaHw2fHx3b21hbiUyMGpvZ2dpbmd8ZW58MHx8fHwxNzcxODMyMTY4fDA&ixlib=rb-4.1.0&q=80&w=1080",
+      "imageHint": "woman jogging"
+    },
+    {
+      "id": "avatar6",
+      "description": "User avatar 6",
+      "imageUrl": "https://images.unsplash.com/photo-1486739985386-d4fae04ca6f7?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3NDE5ODJ8MHwxfHNlYXJjaHwxfHxtYW4lMjBqb2dnaW5nfGVufDB8fHx8MTc3MTgzMjE2OHww&ixlib=rb-4.1.0&q=80&w=1080",
+      "imageHint": "man jogging"
+    },
+    {
+      "id": "avatar7",
+      "description": "User avatar 7",
+      "imageUrl": "https://images.unsplash.com/photo-1623991991743-86f9db94ea35?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3NDE5ODJ8MHwxfHNlYXJjaHw0fHxwZXJzb24lMjBjaXR5fGVufDB8fHx8MTc3MTc1NzkwMHww&ixlib=rb-4.1.0&q=80&w=1080",
+      "imageHint": "person city"
+    }
+  ]
 }
