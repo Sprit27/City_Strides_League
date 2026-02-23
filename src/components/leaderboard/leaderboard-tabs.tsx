@@ -12,7 +12,7 @@ import {
 } from "@/components/ui/table";
 import { Card } from "@/components/ui/card";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { getUsers } from "@/lib/data";
+import { getUsers, getCurrentUser } from "@/lib/data";
 import type { User } from "@/lib/types";
 import { Crown } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
@@ -23,12 +23,17 @@ type LeaderboardCategory = "distance" | "avgSpeed" | "pace";
 const LeaderboardTable = ({ category }: { category: LeaderboardCategory }) => {
   const [users, setUsers] = useState<User[]>([]);
   const [loading, setLoading] = useState(true);
+  const [currentUserId, setCurrentUserId] = useState<string | null>(null);
 
   useEffect(() => {
     async function fetchUsers() {
       setLoading(true);
-      const userList = await getUsers();
+      const [userList, currentUser] = await Promise.all([
+        getUsers(),
+        getCurrentUser()
+      ]);
       setUsers(userList);
+      setCurrentUserId(currentUser?.id ?? null);
       setLoading(false);
     }
     fetchUsers();
@@ -54,7 +59,7 @@ const LeaderboardTable = ({ category }: { category: LeaderboardCategory }) => {
     }
   };
 
-  const isCurrentUser = (user: User) => user.name === "You";
+  const isCurrentUser = (user: User) => user.id === currentUserId;
 
   if (loading) {
     return (

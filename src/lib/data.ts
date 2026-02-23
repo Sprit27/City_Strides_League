@@ -16,17 +16,10 @@ function getCurrentAuthUser(): Promise<AuthUser | null> {
 
 export async function getUsers(): Promise<User[]> {
   try {
-    const authUser = await getCurrentAuthUser();
-    const currentUserId = authUser?.uid;
-
     const usersCol = collection(db, 'users');
     const userSnapshot = await getDocs(usersCol);
     const userList = userSnapshot.docs.map(doc => {
-        const user = { id: doc.id, ...doc.data() } as User;
-        if (user.id === currentUserId) {
-            return { ...user, name: "You" };
-        }
-        return user;
+        return { id: doc.id, ...doc.data() } as User;
     });
     return userList;
   } catch (error) {
