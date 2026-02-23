@@ -1,6 +1,6 @@
 "use client";
 
-import { APIProvider, Map, Polyline, AdvancedMarker } from "@vis.gl/react-google-maps";
+import { APIProvider, Map, AdvancedMarker, useMap } from "@vis.gl/react-google-maps";
 import { useState, useEffect, useRef, useCallback } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -18,6 +18,33 @@ const haversineDistance = (mk1: LatLng, mk2: LatLng): number => {
 
   const d = 2 * R * Math.asin(Math.sqrt(Math.sin(difflat / 2) * Math.sin(difflat / 2) + Math.cos(rlat1) * Math.cos(rlat2) * Math.sin(difflon / 2) * Math.sin(difflon / 2)));
   return d;
+};
+
+const Polyline = (props: google.maps.PolylineOptions) => {
+  const map = useMap();
+  const [instance, setInstance] = useState<google.maps.Polyline | null>(null);
+
+  useEffect(() => {
+    if (!map) return;
+
+    if (!instance) {
+      setInstance(new google.maps.Polyline());
+    }
+
+    return () => {
+      if (instance) {
+        instance.setMap(null);
+      }
+    };
+  }, [map, instance]);
+
+  useEffect(() => {
+    if (instance) {
+      instance.setOptions({...props, map});
+    }
+  }, [instance, props, map]);
+
+  return null;
 };
 
 
