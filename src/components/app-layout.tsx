@@ -2,7 +2,7 @@
 "use client";
 
 import Link from "next/link";
-import { usePathname } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
 import {
   SidebarProvider,
   Sidebar,
@@ -27,19 +27,35 @@ import { getCurrentUser } from "@/lib/data";
 import { useEffect, useState } from "react";
 import type { User } from "@/lib/types";
 import { Skeleton } from "@/components/ui/skeleton";
+import { auth } from "@/lib/firebase/clientApp";
+import { signOut } from "firebase/auth";
 
 
 export function AppLayout({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
+  const router = useRouter();
   const [currentUser, setCurrentUser] = useState<User | null>(null);
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     async function fetchUser() {
+      setLoading(true);
       const user = await getCurrentUser();
-      setCurrentUser(user);
+      if (!user) {
+        // If no user is logged in, redirect to login
+        router.push("/login");
+      } else {
+        setCurrentUser(user);
+        setLoading(false);
+      }
     }
     fetchUser();
-  }, []);
+  }, [router]);
+
+  const handleSignOut = async () => {
+    await signOut(auth);
+    router.push("/login");
+  };
 
   return (
     <SidebarProvider>
@@ -85,7 +101,15 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
           </SidebarMenu>
         </SidebarContent>
         <SidebarFooter>
-          {currentUser ? (
+          {loading ? (
+             <div className="flex items-center gap-3 p-2">
+                <Skeleton className="h-10 w-10 rounded-full" />
+                <div className="flex flex-col gap-1">
+                    <Skeleton className="h-4 w-24" />
+                    <Skeleton className="h-3 w-16" />
+                </div>
+             </div>
+          ) : currentUser ? (
             <div className="flex items-center gap-3 p-2">
               <Avatar className="h-10 w-10">
                 <AvatarImage src={currentUser.avatarUrl} alt={currentUser.name} />
@@ -101,22 +125,12 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
                 <p className="text-xs text-sidebar-foreground/70">Pro Member</p>
               </div>
             </div>
-          ) : (
-             <div className="flex items-center gap-3 p-2">
-                <Skeleton className="h-10 w-10 rounded-full" />
-                <div className="flex flex-col gap-1">
-                    <Skeleton className="h-4 w-24" />
-                    <Skeleton className="h-3 w-16" />
-                </div>
-             </div>
-          )}
+          ) : null}
            <SidebarMenu>
             <SidebarMenuItem>
-              <SidebarMenuButton asChild tooltip="Log Out">
-                <Link href="/login">
+              <SidebarMenuButton onClick={handleSignOut} tooltip="Log Out">
                   <LogOut />
                   <span>Log Out</span>
-                </Link>
               </SidebarMenuButton>
             </SidebarMenuItem>
           </SidebarMenu>
