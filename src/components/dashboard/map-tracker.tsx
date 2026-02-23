@@ -33,7 +33,6 @@ const haversineDistance = (mk1: LatLng, mk2: LatLng): number => {
 };
 
 export function MapTracker() {
-  const [isClient, setIsClient] = useState(false);
   const [trackingStatus, setTrackingStatus] = useState<"idle" | "tracking" | "paused">("idle");
   const [currentPosition, setCurrentPosition] = useState<LatLng | null>(null);
   const [route, setRoute] = useState<LatLng[]>([]);
@@ -49,20 +48,16 @@ export function MapTracker() {
   const markerRef = useRef<L.Marker | null>(null);
   const polylineRef = useRef<L.Polyline | null>(null);
   
-  useEffect(() => {
-    setIsClient(true)
-  }, []);
-
-  const customIcon = isClient ? L.divIcon({
+  const customIcon = L.divIcon({
     html: renderToStaticMarkup(<MapPin className="text-destructive h-8 w-8 animate-pulse" />),
     className: 'bg-transparent border-none',
     iconSize: [32, 32],
     iconAnchor: [16, 32],
-  }) : undefined;
+  });
 
   // Initialize map
   useEffect(() => {
-    if (isClient && mapRef.current && !mapInstanceRef.current) {
+    if (mapRef.current && !mapInstanceRef.current) {
         mapInstanceRef.current = L.map(mapRef.current).setView(currentPosition || [51.5074, -0.1278], 13);
         L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
             attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
@@ -75,11 +70,11 @@ export function MapTracker() {
             mapInstanceRef.current = null;
         }
     }
-  }, [isClient, currentPosition]);
+  }, [currentPosition]);
 
   // Update marker and map view
   useEffect(() => {
-    if (mapInstanceRef.current && currentPosition && customIcon) {
+    if (mapInstanceRef.current && currentPosition) {
       if (!markerRef.current) {
         markerRef.current = L.marker(currentPosition, { icon: customIcon }).addTo(mapInstanceRef.current);
       } else {
@@ -215,7 +210,6 @@ export function MapTracker() {
     <Card className="overflow-hidden shadow-lg">
         <div className="relative h-[400px] w-full md:h-[500px] bg-muted">
             <div ref={mapRef} style={{ height: '100%', width: '100%' }} className="z-0" />
-            {!isClient && <div className="absolute inset-0 flex items-center justify-center bg-muted"><p>Loading map...</p></div>}
         </div>
         <CardContent className="p-4 bg-card">
           <div className="flex flex-col sm:flex-row items-center justify-between gap-4">

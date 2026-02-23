@@ -1,8 +1,42 @@
+"use client";
+
 import { AppLayout } from "@/components/app-layout";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { getCurrentUser, users } from "@/lib/data";
-import { MapTracker } from "@/components/dashboard/map-tracker";
 import { BarChart, Gauge, Rabbit, TrendingUp } from "lucide-react";
+import dynamic from "next/dynamic";
+import { Skeleton } from "@/components/ui/skeleton";
+
+const MapTracker = dynamic(() => import("@/components/dashboard/map-tracker").then(mod => mod.MapTracker), {
+  ssr: false,
+  loading: () => (
+    <Card className="overflow-hidden shadow-lg">
+      <Skeleton className="h-[400px] w-full md:h-[500px]" />
+      <CardContent className="p-4 bg-card">
+        <div className="flex flex-col sm:flex-row items-center justify-between gap-4">
+          <div className="grid grid-cols-3 gap-4 text-center w-full sm:w-auto">
+            <div>
+              <p className="text-sm text-muted-foreground">Distance</p>
+              <p className="font-bold text-2xl font-mono">0.00 km</p>
+            </div>
+            <div>
+              <p className="text-sm text-muted-foreground">Speed</p>
+              <p className="font-bold text-2xl font-mono">0.0 km/h</p>
+            </div>
+            <div>
+              <p className="text-sm text-muted-foreground">Duration</p>
+              <p className="font-bold text-2xl font-mono">00:00:00</p>
+            </div>
+          </div>
+          <div className="flex gap-2">
+            <Skeleton className="h-11 w-32 rounded-md" />
+          </div>
+        </div>
+      </CardContent>
+    </Card>
+  ),
+});
+
 
 export default function DashboardPage() {
   const user = getCurrentUser();
