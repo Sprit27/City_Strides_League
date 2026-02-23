@@ -1,3 +1,4 @@
+
 "use client";
 
 import Link from "next/link";
@@ -23,11 +24,22 @@ import {
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { getCurrentUser } from "@/lib/data";
+import { useEffect, useState } from "react";
+import type { User } from "@/lib/types";
+import { Skeleton } from "@/components/ui/skeleton";
 
-const currentUser = getCurrentUser();
 
 export function AppLayout({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
+  const [currentUser, setCurrentUser] = useState<User | null>(null);
+
+  useEffect(() => {
+    async function fetchUser() {
+      const user = await getCurrentUser();
+      setCurrentUser(user);
+    }
+    fetchUser();
+  }, []);
 
   return (
     <SidebarProvider>
@@ -73,21 +85,31 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
           </SidebarMenu>
         </SidebarContent>
         <SidebarFooter>
-          <div className="flex items-center gap-3 p-2">
-            <Avatar className="h-10 w-10">
-              <AvatarImage src={currentUser.avatarUrl} alt={currentUser.name} />
-              <AvatarFallback>
-                {currentUser.name
-                  .split(" ")
-                  .map((n) => n[0])
-                  .join("")}
-              </AvatarFallback>
-            </Avatar>
-            <div className="flex flex-col overflow-hidden">
-              <p className="truncate font-medium">{currentUser.name}</p>
-              <p className="text-xs text-sidebar-foreground/70">Pro Member</p>
+          {currentUser ? (
+            <div className="flex items-center gap-3 p-2">
+              <Avatar className="h-10 w-10">
+                <AvatarImage src={currentUser.avatarUrl} alt={currentUser.name} />
+                <AvatarFallback>
+                  {currentUser.name
+                    .split(" ")
+                    .map((n) => n[0])
+                    .join("")}
+                </AvatarFallback>
+              </Avatar>
+              <div className="flex flex-col overflow-hidden">
+                <p className="truncate font-medium">{currentUser.name}</p>
+                <p className="text-xs text-sidebar-foreground/70">Pro Member</p>
+              </div>
             </div>
-          </div>
+          ) : (
+             <div className="flex items-center gap-3 p-2">
+                <Skeleton className="h-10 w-10 rounded-full" />
+                <div className="flex flex-col gap-1">
+                    <Skeleton className="h-4 w-24" />
+                    <Skeleton className="h-3 w-16" />
+                </div>
+             </div>
+          )}
            <SidebarMenu>
             <SidebarMenuItem>
               <SidebarMenuButton asChild tooltip="Log Out">

@@ -1,11 +1,14 @@
+
 "use client";
 
 import { AppLayout } from "@/components/app-layout";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { getCurrentUser, users } from "@/lib/data";
+import { getUsers, getCurrentUser } from "@/lib/data";
+import type { User } from "@/lib/types";
 import { BarChart, Gauge, Rabbit, TrendingUp } from "lucide-react";
 import dynamic from "next/dynamic";
 import { Skeleton } from "@/components/ui/skeleton";
+import { useEffect, useState } from "react";
 
 const MapTracker = dynamic(() => import("@/components/dashboard/map-tracker").then(mod => mod.MapTracker), {
   ssr: false,
@@ -39,9 +42,39 @@ const MapTracker = dynamic(() => import("@/components/dashboard/map-tracker").th
 
 
 export default function DashboardPage() {
-  const user = getCurrentUser();
-  const sortedByDistance = [...users].sort((a,b) => b.weeklyStats.distance - a.weeklyStats.distance);
-  const rank = sortedByDistance.findIndex(u => u.id === user.id) + 1;
+  const [user, setUser] = useState<User | null>(null);
+  const [rank, setRank] = useState<number | null>(null);
+
+  useEffect(() => {
+    async function fetchData() {
+      const currentUser = await getCurrentUser();
+      setUser(currentUser);
+
+      if (currentUser) {
+        const allUsers = await getUsers();
+        const sortedByDistance = [...allUsers].sort((a,b) => b.weeklyStats.distance - a.weeklyStats.distance);
+        const userRank = sortedByDistance.findIndex(u => u.id === currentUser.id) + 1;
+        setRank(userRank);
+      }
+    }
+    fetchData();
+  }, []);
+
+  if (!user || rank === null) {
+    return (
+      <AppLayout>
+        <div className="grid gap-6">
+          <div className="grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-4">
+            <Card><CardHeader><Skeleton className="h-4 w-2/3" /></CardHeader><CardContent><Skeleton className="h-8 w-1/3" /></CardContent></Card>
+            <Card><CardHeader><Skeleton className="h-4 w-2/3" /></CardHeader><CardContent><Skeleton className="h-8 w-1/3" /></CardContent></Card>
+            <Card><CardHeader><Skeleton className="h-4 w-2/3" /></CardHeader><CardContent><Skeleton className="h-8 w-1/3" /></CardContent></Card>
+            <Card><CardHeader><Skeleton className="h-4 w-2/3" /></CardHeader><CardContent><Skeleton className="h-8 w-1/3" /></CardContent></Card>
+          </div>
+          <Skeleton className="h-[600px] w-full" />
+        </div>
+      </AppLayout>
+    )
+  }
 
   return (
     <AppLayout>

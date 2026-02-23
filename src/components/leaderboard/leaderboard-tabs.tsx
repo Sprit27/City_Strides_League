@@ -1,3 +1,4 @@
+
 "use client";
 
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -11,14 +12,28 @@ import {
 } from "@/components/ui/table";
 import { Card } from "@/components/ui/card";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { users } from "@/lib/data";
+import { getUsers } from "@/lib/data";
 import type { User } from "@/lib/types";
 import { Crown } from "lucide-react";
-import { useMemo } from "react";
+import { useEffect, useMemo, useState } from "react";
+import { Skeleton } from "@/components/ui/skeleton";
 
 type LeaderboardCategory = "distance" | "avgSpeed" | "pace";
 
 const LeaderboardTable = ({ category }: { category: LeaderboardCategory }) => {
+  const [users, setUsers] = useState<User[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    async function fetchUsers() {
+      setLoading(true);
+      const userList = await getUsers();
+      setUsers(userList);
+      setLoading(false);
+    }
+    fetchUsers();
+  }, []);
+
   const sortedUsers = useMemo(() => {
     return [...users].sort((a, b) => {
       if (category === "pace") {
@@ -26,7 +41,7 @@ const LeaderboardTable = ({ category }: { category: LeaderboardCategory }) => {
       }
       return b.weeklyStats[category] - a.weeklyStats[category];
     });
-  }, [category]);
+  }, [category, users]);
 
   const getStatDisplay = (user: User) => {
     switch (category) {
@@ -40,6 +55,31 @@ const LeaderboardTable = ({ category }: { category: LeaderboardCategory }) => {
   };
 
   const isCurrentUser = (user: User) => user.name === "You";
+
+  if (loading) {
+    return (
+      <Card>
+        <Table>
+          <TableHeader>
+            <TableRow>
+              <TableHead className="w-[80px]">Rank</TableHead>
+              <TableHead>User</TableHead>
+              <TableHead className="text-right pr-6">Stat</TableHead>
+            </TableRow>
+          </TableHeader>
+          <TableBody>
+            {Array.from({ length: 7 }).map((_, i) => (
+              <TableRow key={i}>
+                <TableCell><Skeleton className="h-6 w-6" /></TableCell>
+                <TableCell><div className="flex items-center gap-3"><Skeleton className="h-10 w-10 rounded-full" /><Skeleton className="h-4 w-32" /></div></TableCell>
+                <TableCell className="text-right"><Skeleton className="h-4 w-20 ml-auto" /></TableCell>
+              </TableRow>
+            ))}
+          </TableBody>
+        </Table>
+      </Card>
+    )
+  }
 
   return (
     <Card>

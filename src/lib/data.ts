@@ -1,81 +1,37 @@
+
 import type { User } from './types';
-import { PlaceHolderImages } from './placeholder-images';
+import { db } from './firebase/clientApp';
+import { collection, getDocs, doc, getDoc } from 'firebase/firestore';
 
-const avatarUrls = PlaceHolderImages.map(p => p.imageUrl);
+// In a real app, you would get this from your authentication state.
+const CURRENT_USER_ID = 'user-6';
 
-export const users: User[] = [
-  {
-    id: 'user-1',
-    name: 'Alex "Speedster" Chen',
-    avatarUrl: avatarUrls[0],
-    weeklyStats: {
-      distance: 42.2,
-      avgSpeed: 12.5,
-      pace: 4.8,
-    },
-  },
-  {
-    id: 'user-2',
-    name: 'Maria "Marathon" Garcia',
-    avatarUrl: avatarUrls[1],
-    weeklyStats: {
-      distance: 55.1,
-      avgSpeed: 10.2,
-      pace: 5.88,
-    },
-  },
-  {
-    id: 'user-3',
-    name: 'Sam "The Tortoise" Jones',
-    avatarUrl: avatarUrls[2],
-    weeklyStats: {
-      distance: 25.6,
-      avgSpeed: 8.0,
-      pace: 7.5,
-    },
-  },
-  {
-    id: 'user-4',
-    name: 'Jennifer "Jet" Lee',
-    avatarUrl: avatarUrls[3],
-    weeklyStats: {
-      distance: 30.0,
-      avgSpeed: 15.1,
-      pace: 3.97,
-    },
-  },
-  {
-    id: 'user-5',
-    name: 'David "Distance" Kim',
-    avatarUrl: avatarUrls[4],
-    weeklyStats: {
-      distance: 60.5,
-      avgSpeed: 9.5,
-      pace: 6.31,
-    },
-  },
-  {
-    id: 'user-6',
-    name: 'You',
-    avatarUrl: avatarUrls[5],
-    weeklyStats: {
-      distance: 35.2,
-      avgSpeed: 11.8,
-      pace: 5.08,
-    },
-  },
-  {
-    id: 'user-7',
-    name: 'Chloe "Pacer" Nguyen',
-    avatarUrl: avatarUrls[6],
-    weeklyStats: {
-      distance: 48.9,
-      avgSpeed: 13.0,
-      pace: 4.61,
-    },
-  },
-];
+export async function getUsers(): Promise<User[]> {
+  try {
+    const usersCol = collection(db, 'users');
+    const userSnapshot = await getDocs(usersCol);
+    const userList = userSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as User));
+    return userList;
+  } catch (error) {
+    console.error("Error fetching users: ", error);
+    // Returning an empty array in case of an error, so the app doesn't crash.
+    return [];
+  }
+}
 
-export const getCurrentUser = (): User => {
-    return users.find(u => u.name === 'You')!;
+export async function getCurrentUser(): Promise<User | null> {
+    try {
+        const userRef = doc(db, 'users', CURRENT_USER_ID);
+        const userSnap = await getDoc(userRef);
+
+        if (userSnap.exists()) {
+            return { id: userSnap.id, ...userSnap.data() } as User;
+        } else {
+            console.log("Current user not found in database!");
+            return null;
+        }
+    } catch(error) {
+        console.error("Error fetching current user: ", error);
+        return null;
+    }
 }
