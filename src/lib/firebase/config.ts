@@ -1,6 +1,5 @@
 
-// This file contains placeholder values.
-// You'll need to replace them with your actual Firebase project configuration.
+// This file contains your actual Firebase project configuration.
 export const firebaseConfig = {
   apiKey: "AIzaSyDrszL1_akAEdTrCc453Wq58G8HhJ_gNnk",
   authDomain: "studio-9984507916-37681.firebaseapp.com",

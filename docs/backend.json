@@ -1,0 +1,48 @@
+
+{
+  "entities": {
+    "User": {
+      "title": "User Profile",
+      "description": "Stores user statistics and profile information.",
+      "type": "object",
+      "properties": {
+        "name": {
+          "type": "string",
+          "description": "Full name of the user."
+        },
+        "avatarUrl": {
+          "type": "string",
+          "format": "uri",
+          "description": "URL to the user's avatar image."
+        },
+        "weeklyStats": {
+          "type": "object",
+          "properties": {
+            "distance": {
+              "type": "number",
+              "description": "Total distance run this week in km."
+            },
+            "avgSpeed": {
+              "type": "number",
+              "description": "Average speed this week in km/h."
+            },
+            "pace": {
+              "type": "number",
+              "description": "Average pace this week in min/km."
+            }
+          }
+        }
+      },
+      "required": ["name", "avatarUrl", "weeklyStats"]
+    }
+  },
+  "auth": {
+    "providers": ["password"]
+  },
+  "firestore": {
+    "/users/{userId}": {
+      "schema": "User",
+      "description": "User profile document identified by the Firebase Auth UID."
+    }
+  }
+}
