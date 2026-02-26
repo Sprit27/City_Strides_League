@@ -54,7 +54,7 @@ export default function DashboardPage() {
         const allUsers = await getUsers();
         const sortedByDistance = [...allUsers].sort((a,b) => b.weeklyStats.distance - a.weeklyStats.distance);
         const userRank = sortedByDistance.findIndex(u => u.id === currentUser.id) + 1;
-        setRank(userRank);
+        setRank(userRank > 0 ? userRank : sortedByDistance.length + 1);
       }
     }
     fetchData();
