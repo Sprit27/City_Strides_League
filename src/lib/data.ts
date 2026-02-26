@@ -41,10 +41,8 @@ export async function getCurrentUser(): Promise<User | null> {
         if (userSnap.exists()) {
             return { id: userSnap.id, ...userSnap.data() } as User;
         } else {
-            console.warn(`User document not found for uid: ${authUser.uid}`);
-            // Let's create a record for them if they exist in auth but not firestore
-            // This can happen if the doc was deleted manually.
-             const name = authUser.displayName || "New User";
+            // Auto-create profile if it doesn't exist (e.g. first time Google login)
+             const name = authUser.displayName || "Runner";
              const newUser: Omit<User, 'id'> = {
                 name,
                 avatarUrl: authUser.photoURL || "https://images.unsplash.com/photo-1623991991743-86f9db94ea35?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3NDE5ODJ8MHwxfHNlYXJjaHw0fHxwZXJzb24lMjBjaXR5fGVufDB8fHx8MTc3MTc1NzkwMHww&ixlib=rb-4.1.0&q=80&w=1080",
