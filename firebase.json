@@ -1,0 +1,8 @@
+{
+  "firestore": {
+    "database": "(default)",
+    "location": "us-central1",
+    "rules": "/home/anish/Desktop/set/Project/City_Strides_League/firestore.rules",
+    "indexes": "/home/anish/Desktop/set/Project/City_Strides_League/firestore.indexes.json"
+  }
+}

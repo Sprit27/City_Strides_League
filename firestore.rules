@@ -1,0 +1,48 @@
+rules_version = '2';
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+    
+    // Helper function to check if user is authenticated
+    function isAuthenticated() {
+      return request.auth != null;
+    }
+    
+    // Helper function to check if user owns the document
+    function isOwner(userId) {
+      return isAuthenticated() && request.auth.uid == userId;
+    }
+    
+    // Users collection - users can only read/write their own data
+    match /users/{userId} {
+      // Anyone authenticated can read any user (for leaderboard)
+      allow read: if isAuthenticated();
+      
+      // Users can only create/update their own profile
+      allow create: if isOwner(userId);
+      allow update: if isOwner(userId);
+      
+      // Prevent deletion
+      allow delete: if false;
+    }
+    
+    // Runs collection - users can only write their own runs
+    match /runs/{runId} {
+      // Anyone authenticated can read runs (for history/stats)
+      allow read: if isAuthenticated();
+      
+      // Users can only create runs with their own userId
+      allow create: if isAuthenticated() 
+                    && request.resource.data.userId == request.auth.uid;
+      
+      // Prevent updates and deletes
+      allow update: if false;
+      allow delete: if false;
+    }
+    
+    // Deny all other access
+    match /{document=**} {
+      allow read, write: if false;
+    }
+  }
+}
