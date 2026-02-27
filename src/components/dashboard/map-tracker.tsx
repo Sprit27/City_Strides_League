@@ -8,15 +8,16 @@ import { useToast } from "@/hooks/use-toast";
 import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
 import { renderToStaticMarkup } from "react-dom/server";
+import { saveRun } from "@/lib/data";
 
 // Fix for default icon URLs which don't work well with bundlers
 if (typeof window !== 'undefined') {
-    delete (L.Icon.Default.prototype as any)._getIconUrl;
-    L.Icon.Default.mergeOptions({
-      iconRetinaUrl: 'https://unpkg.com/leaflet@1.9.4/dist/images/marker-icon-2x.png',
-      iconUrl: 'https://unpkg.com/leaflet@1.9.4/dist/images/marker-icon.png',
-      shadowUrl: 'https://unpkg.com/leaflet@1.9.4/dist/images/marker-shadow.png',
-    });
+  delete (L.Icon.Default.prototype as any)._getIconUrl;
+  L.Icon.Default.mergeOptions({
+    iconRetinaUrl: 'https://unpkg.com/leaflet@1.9.4/dist/images/marker-icon-2x.png',
+    iconUrl: 'https://unpkg.com/leaflet@1.9.4/dist/images/marker-icon.png',
+    shadowUrl: 'https://unpkg.com/leaflet@1.9.4/dist/images/marker-shadow.png',
+  });
 }
 
 type LatLng = L.LatLngTuple;
@@ -39,6 +40,7 @@ export function MapTracker() {
   const [distance, setDistance] = useState(0);
   const [speed, setSpeed] = useState(0);
   const [duration, setDuration] = useState(0);
+  const [isSaving, setIsSaving] = useState(false);
   const watchId = useRef<number | null>(null);
   const timerId = useRef<NodeJS.Timeout | null>(null);
   const { toast } = useToast();
@@ -47,7 +49,7 @@ export function MapTracker() {
   const mapInstanceRef = useRef<L.Map | null>(null);
   const markerRef = useRef<L.Marker | null>(null);
   const polylineRef = useRef<L.Polyline | null>(null);
-  
+
   const customIcon = L.divIcon({
     html: renderToStaticMarkup(<MapPin className="text-destructive h-8 w-8 animate-pulse" />),
     className: 'bg-transparent border-none',
@@ -58,17 +60,17 @@ export function MapTracker() {
   // Initialize map
   useEffect(() => {
     if (mapRef.current && !mapInstanceRef.current) {
-        mapInstanceRef.current = L.map(mapRef.current).setView(currentPosition || [51.5074, -0.1278], 13);
-        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-            attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
-        }).addTo(mapInstanceRef.current);
+      mapInstanceRef.current = L.map(mapRef.current).setView(currentPosition || [51.5074, -0.1278], 13);
+      L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+        attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
+      }).addTo(mapInstanceRef.current);
     }
-    
+
     return () => {
-        if(mapInstanceRef.current) {
-            mapInstanceRef.current.remove();
-            mapInstanceRef.current = null;
-        }
+      if (mapInstanceRef.current) {
+        mapInstanceRef.current.remove();
+        mapInstanceRef.current = null;
+      }
     }
   }, [currentPosition]);
 
@@ -86,43 +88,88 @@ export function MapTracker() {
 
   // Update polyline
   useEffect(() => {
-      if(mapInstanceRef.current) {
-          if(!polylineRef.current && route.length > 0) {
-              polylineRef.current = L.polyline(route, { color: '#386641', opacity: 0.8, weight: 6 }).addTo(mapInstanceRef.current);
-          } else if (polylineRef.current) {
-              polylineRef.current.setLatLngs(route);
-          }
+    if (mapInstanceRef.current) {
+      if (!polylineRef.current && route.length > 0) {
+        polylineRef.current = L.polyline(route, { color: '#386641', opacity: 0.8, weight: 6 }).addTo(mapInstanceRef.current);
+      } else if (polylineRef.current) {
+        polylineRef.current.setLatLngs(route);
       }
+    }
   }, [route]);
 
   const handleSuccess = useCallback((pos: GeolocationPosition) => {
     const newPosition: LatLng = [pos.coords.latitude, pos.coords.longitude];
-    
+
     setRoute((prevRoute) => {
-        if (prevRoute.length > 0) {
-            const lastPosition = prevRoute[prevRoute.length - 1];
-            const newDistance = haversineDistance(lastPosition, newPosition);
-            setDistance((prevDistance) => prevDistance + newDistance);
-        }
-        return [...prevRoute, newPosition];
+      if (prevRoute.length > 0) {
+        const lastPosition = prevRoute[prevRoute.length - 1];
+        const newDistance = haversineDistance(lastPosition, newPosition);
+        setDistance((prevDistance) => prevDistance + newDistance);
+      }
+      return [...prevRoute, newPosition];
     });
 
     setCurrentPosition(newPosition);
-    if(pos.coords.speed) {
-        setSpeed(pos.coords.speed * 3.6); // m/s to km/h
+    if (pos.coords.speed) {
+      setSpeed(pos.coords.speed * 3.6); // m/s to km/h
     }
   }, []);
 
   const handleError = useCallback((error: GeolocationPositionError) => {
     console.error("Geolocation error:", error);
     toast({
-        title: "Location Error",
-        description: "Could not get position. Please enable location services.",
-        variant: "destructive",
+      title: "Location Error",
+      description: "Could not get position. Please enable location services.",
+      variant: "destructive",
     });
     setTrackingStatus("idle");
   }, [toast]);
-  
+
+  // Save run state to localStorage during active run only
+  const saveRunState = useCallback(() => {
+    if (trackingStatus === 'tracking' || trackingStatus === 'paused') {
+      localStorage.setItem('activeRun', JSON.stringify({
+        route,
+        distance,
+        duration,
+        timestamp: Date.now()
+      }));
+    }
+  }, [route, distance, duration, trackingStatus]);
+
+  // Restore run state from localStorage on mount
+  useEffect(() => {
+    const savedRun = localStorage.getItem('activeRun');
+    if (savedRun) {
+      try {
+        const data = JSON.parse(savedRun);
+        // Only restore if less than 2 hours old
+        if (Date.now() - data.timestamp < 7200000) {
+          setRoute(data.route);
+          setDistance(data.distance);
+          setDuration(data.duration);
+          toast({
+            title: "Run Restored",
+            description: "Your previous run was recovered. Continue or stop to save.",
+          });
+        } else {
+          localStorage.removeItem('activeRun');
+        }
+      } catch (e) {
+        console.error('Failed to restore run:', e);
+        localStorage.removeItem('activeRun');
+      }
+    }
+  }, [toast]);
+
+  // Auto-save run state every 10 seconds during tracking
+  useEffect(() => {
+    if (trackingStatus === 'tracking' || trackingStatus === 'paused') {
+      const interval = setInterval(saveRunState, 10000);
+      return () => clearInterval(interval);
+    }
+  }, [trackingStatus, saveRunState]);
+
   const startTracking = () => {
     if ("geolocation" in navigator) {
       setTrackingStatus("tracking");
@@ -165,38 +212,79 @@ export function MapTracker() {
 
   const resumeTracking = () => {
     setTrackingStatus("tracking");
-     if ("geolocation" in navigator) {
-        watchId.current = navigator.geolocation.watchPosition(handleSuccess, handleError, {
-            enableHighAccuracy: true,
-            timeout: 20000,
-            maximumAge: 0,
-        });
-        timerId.current = setInterval(() => {
-            setDuration(d => d + 1);
-        }, 1000);
-     }
+    if ("geolocation" in navigator) {
+      watchId.current = navigator.geolocation.watchPosition(handleSuccess, handleError, {
+        enableHighAccuracy: true,
+        timeout: 20000,
+        maximumAge: 0,
+      });
+      timerId.current = setInterval(() => {
+        setDuration(d => d + 1);
+      }, 1000);
+    }
   }
 
-  const stopTracking = () => {
+  const stopTracking = async () => {
     pauseTracking();
+
+    // Save run to Firestore only if distance > 10 meters
+    if (distance > 0.01) {
+      setIsSaving(true);
+      try {
+        const avgSpeed = duration > 0 ? (distance / (duration / 3600)) : 0; // km/h
+        const pace = avgSpeed > 0 ? (60 / avgSpeed) : 0; // min/km
+
+        await saveRun({
+          distance,
+          avgSpeed,
+          pace,
+          duration,
+          timestamp: new Date()
+        });
+
+        // Clear localStorage after successful save
+        localStorage.removeItem('activeRun');
+
+        toast({
+          title: "Run Saved!",
+          description: `${distance.toFixed(2)} km in ${formatDuration(duration)}. Check leaderboard!`
+        });
+
+        // Reload to refresh stats
+        setTimeout(() => window.location.reload(), 2000);
+      } catch (error) {
+        console.error('Failed to save run:', error);
+        toast({
+          title: "Save Failed",
+          description: "Could not save your run. Check internet connection.",
+          variant: "destructive"
+        });
+      } finally {
+        setIsSaving(false);
+      }
+    } else {
+      toast({ title: "Run Too Short", description: "Run at least 10 meters to save." });
+      localStorage.removeItem('activeRun');
+    }
+
     setTrackingStatus("idle");
-    toast({ title: "Run Finished!", description: `You ran ${distance.toFixed(2)} km in ${formatDuration(duration)}.` });
-    // Keep route to show the finished run, it will be cleared on next start
   };
-  
+
   useEffect(() => {
     if ("geolocation" in navigator) {
-        navigator.geolocation.getCurrentPosition(
+      navigator.geolocation.getCurrentPosition(
         (pos) => setCurrentPosition([pos.coords.latitude, pos.coords.longitude]),
         handleError
-        );
+      );
     }
-    
+
+    // Cleanup on unmount
     return () => {
       if (watchId.current !== null) navigator.geolocation.clearWatch(watchId.current);
       if (timerId.current) clearInterval(timerId.current);
+      saveRunState(); // Save before unmount
     };
-  // eslint-disable-next-line react-hooks/exhaustive-deps
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [handleError]);
 
   const formatDuration = (seconds: number) => {
@@ -208,49 +296,49 @@ export function MapTracker() {
 
   return (
     <Card className="overflow-hidden shadow-lg">
-        <div className="relative h-[400px] w-full md:h-[500px] bg-muted">
-            <div ref={mapRef} style={{ height: '100%', width: '100%' }} className="z-0" />
-        </div>
-        <CardContent className="p-4 bg-card">
-          <div className="flex flex-col sm:flex-row items-center justify-between gap-4">
-            <div className="grid grid-cols-3 gap-4 text-center w-full sm:w-auto">
-              <div>
-                <p className="text-sm text-muted-foreground">Distance</p>
-                <p className="font-bold text-2xl font-mono">{distance.toFixed(2)} km</p>
-              </div>
-              <div>
-                <p className="text-sm text-muted-foreground">Speed</p>
-                <p className="font-bold text-2xl font-mono">{trackingStatus !== 'idle' ? speed.toFixed(1) : '0.0'} km/h</p>
-              </div>
-              <div>
-                <p className="text-sm text-muted-foreground">Duration</p>
-                <p className="font-bold text-2xl font-mono">{formatDuration(duration)}</p>
-              </div>
+      <div className="relative h-[400px] w-full md:h-[500px] bg-muted">
+        <div ref={mapRef} style={{ height: '100%', width: '100%' }} className="z-0" />
+      </div>
+      <CardContent className="p-4 bg-card">
+        <div className="flex flex-col sm:flex-row items-center justify-between gap-4">
+          <div className="grid grid-cols-3 gap-4 text-center w-full sm:w-auto">
+            <div>
+              <p className="text-sm text-muted-foreground">Distance</p>
+              <p className="font-bold text-2xl font-mono">{distance.toFixed(2)} km</p>
             </div>
-            <div className="flex gap-2">
-              {trackingStatus === "idle" && (
-                <Button onClick={startTracking} size="lg" className="bg-primary hover:bg-primary/90 text-primary-foreground">
-                  <Play className="mr-2 h-5 w-5" /> Start Run
-                </Button>
-              )}
-              {trackingStatus === "tracking" && (
-                <Button onClick={pauseTracking} variant="outline" size="lg">
-                  <Pause className="mr-2 h-5 w-5" /> Pause
-                </Button>
-              )}
-              {trackingStatus === "paused" && (
-                <Button onClick={resumeTracking} size="lg" className="bg-primary hover:bg-primary/90 text-primary-foreground">
-                  <Play className="mr-2 h-5 w-5" /> Resume
-                </Button>
-              )}
-              {(trackingStatus === "tracking" || trackingStatus === "paused") && (
-                <Button onClick={stopTracking} variant="destructive" size="lg">
-                  <StopCircle className="mr-2 h-5 w-5" /> Stop
-                </Button>
-              )}
+            <div>
+              <p className="text-sm text-muted-foreground">Speed</p>
+              <p className="font-bold text-2xl font-mono">{trackingStatus !== 'idle' ? speed.toFixed(1) : '0.0'} km/h</p>
+            </div>
+            <div>
+              <p className="text-sm text-muted-foreground">Duration</p>
+              <p className="font-bold text-2xl font-mono">{formatDuration(duration)}</p>
             </div>
           </div>
-        </CardContent>
+          <div className="flex gap-2">
+            {trackingStatus === "idle" && (
+              <Button onClick={startTracking} size="lg" className="bg-primary hover:bg-primary/90 text-primary-foreground">
+                <Play className="mr-2 h-5 w-5" /> Start Run
+              </Button>
+            )}
+            {trackingStatus === "tracking" && (
+              <Button onClick={pauseTracking} variant="outline" size="lg">
+                <Pause className="mr-2 h-5 w-5" /> Pause
+              </Button>
+            )}
+            {trackingStatus === "paused" && (
+              <Button onClick={resumeTracking} size="lg" className="bg-primary hover:bg-primary/90 text-primary-foreground">
+                <Play className="mr-2 h-5 w-5" /> Resume
+              </Button>
+            )}
+            {(trackingStatus === "tracking" || trackingStatus === "paused") && (
+              <Button onClick={stopTracking} variant="destructive" size="lg" disabled={isSaving}>
+                <StopCircle className="mr-2 h-5 w-5" /> {isSaving ? "Saving..." : "Stop"}
+              </Button>
+            )}
+          </div>
+        </div>
+      </CardContent>
     </Card>
   );
 }

@@ -1,7 +1,7 @@
 
 import type { User } from './types';
 import { db, auth } from './firebase/clientApp';
-import { collection, getDocs, doc, getDoc, setDoc } from 'firebase/firestore';
+import { collection, getDocs, doc, getDoc, setDoc, updateDoc, increment, addDoc } from 'firebase/firestore';
 import { onAuthStateChanged, type User as AuthUser } from 'firebase/auth';
 
 // Helper to get the current authenticated user
@@ -55,4 +55,59 @@ export async function getCurrentUser(): Promise<User | null> {
         console.error("Error fetching current user: ", error);
         return null;
     }
+}
+
+export async function saveRun(runData: {
+  distance: number;
+  avgSpeed: number;
+  pace: number;
+  duration: number;
+  timestamp: Date;
+}): Promise<void> {
+  try {
+    const authUser = await getCurrentAuthUser();
+    if (!authUser) {
+      throw new Error('User not authenticated');
+    }
+
+    const userRef = doc(db, 'users', authUser.uid);
+    const userSnap = await getDoc(userRef);
+
+    if (!userSnap.exists()) {
+      throw new Error('User profile not found');
+    }
+
+    const currentUser = userSnap.data() as Omit<User, 'id'>;
+    const currentStats = currentUser.weeklyStats;
+
+    // Update weekly stats - keep the best/longest values
+    const newStats = {
+      distance: Math.max(currentStats.distance, runData.distance),
+      avgSpeed: Math.max(currentStats.avgSpeed, runData.avgSpeed),
+      pace: currentStats.pace === 0 ? runData.pace : Math.min(currentStats.pace, runData.pace)
+    };
+
+    // Update user's weekly stats
+    await updateDoc(userRef, {
+      'weeklyStats.distance': newStats.distance,
+      'weeklyStats.avgSpeed': newStats.avgSpeed,
+      'weeklyStats.pace': newStats.pace
+    });
+
+    // Save run to runs collection for history
+    await addDoc(collection(db, 'runs'), {
+      userId: authUser.uid,
+      userName: currentUser.name,
+      distance: runData.distance,
+      avgSpeed: runData.avgSpeed,
+      pace: runData.pace,
+      duration: runData.duration,
+      timestamp: runData.timestamp
+    });
+
+    console.log('Run saved successfully');
+  } catch (error) {
+    console.error('Error saving run:', error);
+    throw error;
+  }
 }
